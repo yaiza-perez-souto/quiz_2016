@@ -22,7 +22,7 @@
         <div class="right">
           <% if (!session.user) { %>
               <a href="/users/new">Registrarse</a> 
-              <a href="/session">Login</a>
+              <a href="/session?redir=/">Login</a>
           <% } else { %>
               <%= session.user.username %> 
               <a href="/users/<%= session.user.id %>">Perfil</a>
