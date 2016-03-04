@@ -44,3 +44,4 @@ module.exports = function(sequelize, DataTypes) {
 function encryptPassword(password, salt) {
     return crypto.createHmac('sha1', salt).update(password).digest('hex');
 };
+
