@@ -37,6 +37,8 @@ var sequelize = new Sequelize(DATABASE_NAME,
 var Quiz = sequelize.import(path.join(__dirname,'quiz'));
 
 
+/* USARE Migraciones y Seeders
+
 // sequelize.sync() crea e inicializa tabla de preguntas en DB
 sequelize.sync()
     .then(function() {
@@ -58,5 +60,6 @@ sequelize.sync()
         process.exit(1);
     });
 
+*/
 
 exports.Quiz = Quiz; // exportar definición de tabla Quiz
