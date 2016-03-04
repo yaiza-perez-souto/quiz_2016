@@ -6,14 +6,15 @@
     <link rel='stylesheet' href='/stylesheets/style.css' />
   </head>
   <body>
+
   <h2>Quiz: el juego de las preguntas</h2>
 
   <p>
-     La respuesta es <%= result %>.
+     La respuesta <strong> <%= answer %> </strong> es <%= result %>.
   </p>
 
   <p>
-     <a href="/question"> Inténtelo otra vez </a>
+     <a href="/question?answer=<%= answer %>"> Inténtelo otra vez </a>
   </p>
 
   </body>
