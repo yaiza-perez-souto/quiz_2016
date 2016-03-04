@@ -18,6 +18,20 @@ exports.load = function(req, res, next, userId) {
         .catch(function(error) { next(error); });
 };
 
+// MW que permite acciones solamente si al usuario logeado es admin o rl propio usuario.
+exports.ownershipRequired = function(req, res, next){
+
+    var isAdmin      = req.session.user.isAdmin;
+    var userId       = req.user.id;
+    var loggedUserId = req.session.user.id;
+
+    if (isAdmin || userId === loggedUserId) {
+        next();
+    } else {
+      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
+      res.send(403);    }
+};
+
 
 // GET /users
 exports.index = function(req, res, next) {
