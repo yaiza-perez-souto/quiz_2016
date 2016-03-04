@@ -35,7 +35,13 @@ exports.ownershipRequired = function(req, res, next){
 
 // GET /quizzes
 exports.index = function(req, res, next) {
-	models.Quiz.findAll()
+
+  var options = {};
+  if (req.user) {
+    options.where = {AuthorId: req.user.id}
+  }
+
+	models.Quiz.findAll(options)
 		.then(function(quizzes) {
 			res.render('quizzes/index.ejs', { quizzes: quizzes});
 		})

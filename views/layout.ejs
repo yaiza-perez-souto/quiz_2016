@@ -37,6 +37,9 @@
         <a href="/">Inicio</a>
         <a href="/quizzes">Preguntas</a>
         <a href="/users">Usuarios</a>
+        <% if (session.user) { %>
+            <a href="/users/<%= session.user.id %>/quizzes">Mis Preguntas</a>
+        <% } %>
       </nav>
 
        <section>
