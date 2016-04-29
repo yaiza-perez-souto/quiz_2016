@@ -145,7 +145,7 @@ exports.destroy = function(req, res, next) {
  * La promesa se satisface si todo es correcto, y devuelve un objeto con el User.
  * La promesa falla si la autenticación falla o si hay errores.
  */
-exports.autenticar = function(login, password) {
+exports.authenticate = function(login, password) {
     
     return models.User.findOne({where: {username: login}})
         .then(function(user) {
