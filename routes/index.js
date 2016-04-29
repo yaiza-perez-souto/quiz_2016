@@ -40,7 +40,7 @@ router.delete('/users/:userId(\\d+)',   sessionController.loginRequired,
 										userController.adminAndNotMyselfRequired, 
 										userController.destroy);  // borrar cuenta
 router.get('/users/:userId(\\d+)/quizzes', sessionController.loginRequired, 
-										   userController.ownershipRequired, 
+										   userController.adminOrMyselfRequired, 
 										   quizController.index);     // ver las preguntas de un usuario
 
 
