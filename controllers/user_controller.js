@@ -142,8 +142,8 @@ exports.destroy = function(req, res, next) {
  * Autenticar un usuario: Comprueba si el usuario esta registrado en users
  *
  * Devuelve una Promesa que busca el usuario con el login dado y comprueba su password.
- * La promesa se satisface si todo es correcto, y devuelve un objeto con el User.
- * La promesa falla si la autenticación falla o si hay errores.
+ * Si la autenticacion es correcta, la promesa se satisface devuelve un objeto con el User.
+ * Si la autenticacion falla, la promesa se satisface pero devuelve null.
  */
 exports.authenticate = function(login, password) {
     
@@ -152,7 +152,7 @@ exports.authenticate = function(login, password) {
             if (user && user.verifyPassword(password)) {
                 return user;
             } else {
-                throw new Error('Autenticación fallida.');
+                return null;
             }
         });
 }; 
