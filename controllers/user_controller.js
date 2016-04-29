@@ -12,14 +12,32 @@ exports.load = function(req, res, next, userId) {
                 next();
             } else {
                 req.flash('error', 'No existe el usuario con id='+id+'.');
-                next(new Error('No existe userId=' + userId));
+                throw new Error('No existe userId=' + userId);
             }
         })
         .catch(function(error) { next(error); });
 };
 
-// MW que permite acciones solamente si al usuario logeado es admin o rl propio usuario.
-exports.ownershipRequired = function(req, res, next){
+// MW que permite gestionar un usuario solamente si el usuario logeado es:
+//   - admin 
+//   - o es el usuario a gestionar.
+exports.adminOrMyselfRequired = function(req, res, next){
+
+    var isAdmin      = req.session.user.isAdmin;
+    var userId       = req.user.id;
+    var loggedUserId = req.session.user.id;
+
+    if (isAdmin || userId === loggedUserId) {
+        next();
+    } else {
+      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
+      res.send(403);    }
+};
+
+// MW que permite gestionar un usuario solamente si el usuario logeado es:
+//   - admin
+//   - y no es el usuario a gestionar.
+exports.adminAndNotMyselfRequired = function(req, res, next){
 
     var isAdmin      = req.session.user.isAdmin;
     var userId       = req.user.id;
@@ -159,7 +177,7 @@ exports.destroy = function(req, res, next) {
  * La promesa se satisface si todo es correcto, y devuelve un objeto con el User.
  * La promesa falla si la autenticación falla o si hay errores.
  */
-exports.autenticar = function(login, password) {
+exports.authenticate = function(login, password) {
     
     return models.User.findOne({where: {username: login}})
         .then(function(user) {
