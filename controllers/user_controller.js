@@ -88,10 +88,16 @@ exports.edit = function(req, res, next) {
 // PUT /users/:id
 exports.update = function(req, res, next) {
 
-    req.user.username  = req.body.user.username;
+    // req.user.username  = req.body.user.username; // No se permite su edicion
     req.user.password  = req.body.user.password;
 
-    req.user.save({fields: ["username", "password", "salt"]})
+    // El password no puede estar vacio
+    if ( ! req.body.user.password) { 
+        req.flash('error', "El campo Password debe rellenarse.");
+        return res.render('users/edit', {user: req.user});
+    }
+
+    req.user.save({fields: ["password", "salt"]})
         .then(function(user) {
             req.flash('success', 'Usuario actualizado con éxito.');
             res.redirect('/users');  // Redirección HTTP a /
