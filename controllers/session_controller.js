@@ -40,7 +40,7 @@ exports.create = function(req, res, next) {
     var login     = req.body.login;
     var password  = req.body.password;
 
-    userController.autenticar(login, password)
+    userController.authenticate(login, password)
         .then(function(user) {
 
 	        // Crear req.session.user y guardar campos id y username
