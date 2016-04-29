@@ -12,7 +12,7 @@ exports.load = function(req, res, next, userId) {
                 next();
             } else {
                 req.flash('error', 'No existe el usuario con id='+id+'.');
-                next(new Error('No existe userId=' + userId));
+                throw new Error('No existe userId=' + userId);
             }
         })
         .catch(function(error) { next(error); });
