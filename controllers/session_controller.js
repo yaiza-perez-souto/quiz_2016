@@ -1,5 +1,27 @@
 
-var userController = require('./user_controller');
+var models = require('../models');
+var Sequelize = require('sequelize');
+
+
+/*
+ * Autenticar un usuario: Comprueba si el usuario esta registrado en users
+ *
+ * Devuelve una Promesa que busca el usuario con el login dado y comprueba su password.
+ * Si la autenticacion es correcta, la promesa se satisface devuelve un objeto con el User.
+ * Si la autenticacion falla, la promesa se satisface pero devuelve null.
+ */
+var authenticate = function(login, password) {
+    
+    return models.User.findOne({where: {username: login}})
+        .then(function(user) {
+            if (user && user.verifyPassword(password)) {
+                return user;
+            } else {
+                return null;
+            }
+        });
+}; 
+
 
 
 // GET /session   -- Formulario de login
@@ -14,7 +36,7 @@ exports.create = function(req, res, next) {
     var login     = req.body.login;
     var password  = req.body.password;
 
-    userController.authenticate(login, password)
+    authenticate(login, password)
         .then(function(user) {
             if (user) {
     	        // Crear req.session.user y guardar campos id y username
