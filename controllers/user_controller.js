@@ -136,23 +136,3 @@ exports.destroy = function(req, res, next) {
         });
 };
 
-
-
-/*
- * Autenticar un usuario: Comprueba si el usuario esta registrado en users
- *
- * Devuelve una Promesa que busca el usuario con el login dado y comprueba su password.
- * Si la autenticacion es correcta, la promesa se satisface devuelve un objeto con el User.
- * Si la autenticacion falla, la promesa se satisface pero devuelve null.
- */
-exports.authenticate = function(login, password) {
-    
-    return models.User.findOne({where: {username: login}})
-        .then(function(user) {
-            if (user && user.verifyPassword(password)) {
-                return user;
-            } else {
-                return null;
-            }
-        });
-}; 
