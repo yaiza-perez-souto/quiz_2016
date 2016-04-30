@@ -18,38 +18,6 @@ exports.load = function(req, res, next, userId) {
         .catch(function(error) { next(error); });
 };
 
-// MW que permite gestionar un usuario solamente si el usuario logeado es:
-//   - admin 
-//   - o es el usuario a gestionar.
-exports.adminOrMyselfRequired = function(req, res, next){
-
-    var isAdmin      = req.session.user.isAdmin;
-    var userId       = req.user.id;
-    var loggedUserId = req.session.user.id;
-
-    if (isAdmin || userId === loggedUserId) {
-        next();
-    } else {
-      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
-      res.send(403);    }
-};
-
-// MW que permite gestionar un usuario solamente si el usuario logeado es:
-//   - admin
-//   - y no es el usuario a gestionar.
-exports.adminAndNotMyselfRequired = function(req, res, next){
-
-    var isAdmin      = req.session.user.isAdmin;
-    var userId       = req.user.id;
-    var loggedUserId = req.session.user.id;
-
-    if (isAdmin || userId === loggedUserId) {
-        next();
-    } else {
-      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
-      res.send(403);    }
-};
-
 
 // GET /users
 exports.index = function(req, res, next) {
@@ -168,23 +136,3 @@ exports.destroy = function(req, res, next) {
         });
 };
 
-
-
-/*
- * Autenticar un usuario: Comprueba si el usuario esta registrado en users
- *
- * Devuelve una Promesa que busca el usuario con el login dado y comprueba su password.
- * Si la autenticacion es correcta, la promesa se satisface devuelve un objeto con el User.
- * Si la autenticacion falla, la promesa se satisface pero devuelve null.
- */
-exports.authenticate = function(login, password) {
-    
-    return models.User.findOne({where: {username: login}})
-        .then(function(user) {
-            if (user && user.verifyPassword(password)) {
-                return user;
-            } else {
-                return null;
-            }
-        });
-}; 

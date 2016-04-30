@@ -1,5 +1,6 @@
 
-var userController = require('./user_controller');
+var models = require('../models');
+var Sequelize = require('sequelize');
 
 // Middleware: Se requiere hacer login.
 //
@@ -20,18 +21,58 @@ exports.loginRequired = function (req, res, next) {
     }
 };
 
+// MW que permite gestionar un usuario solamente si el usuario logeado es:
+//   - admin 
+//   - o es el usuario a gestionar.
+exports.adminOrMyselfRequired = function(req, res, next){
+
+    var isAdmin      = req.session.user.isAdmin;
+    var userId       = req.user.id;
+    var loggedUserId = req.session.user.id;
+
+    if (isAdmin || userId === loggedUserId) {
+        next();
+    } else {
+      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
+      res.send(403);    }
+};
+
+// MW que permite gestionar un usuario solamente si el usuario logeado es:
+//   - admin
+//   - y no es el usuario a gestionar.
+exports.adminAndNotMyselfRequired = function(req, res, next){
+
+    var isAdmin      = req.session.user.isAdmin;
+    var userId       = req.user.id;
+    var loggedUserId = req.session.user.id;
+
+    if (isAdmin || userId === loggedUserId) {
+        next();
+    } else {
+      console.log('Ruta prohibida: no es el usuario logeado, ni un administrador.');
+      res.send(403);    }
+};
+
 
 // Configurar Passport
 
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
+/*
+ * Autenticar un usuario: Comprueba si el usuario esta registrado en users
+ *
+ * DBusca el usuario con el username dado y comprueba su password.
+ * Si la autenticacion es correcta, llama a done(null, user).
+ * Si la autenticacion falla, llama a done(null,false).
+ * Si hay errores llama a done(error);
+ */
 passport.use(new LocalStrategy(
     function(username, password, done) {
 
-        userController.authenticate(username, password)
+        models.User.findOne({where: {username: username}})
             .then(function(user) {
-                if (user) {
+                if (user && user.verifyPassword(password)) {
                     return done(null, user); 
                 } else {
                     return done(null,false);        
@@ -42,6 +83,7 @@ passport.use(new LocalStrategy(
             });
     }
 ));
+ 
 
 
 // GET /session   -- Formulario de login
@@ -62,6 +104,7 @@ exports.create = function(req, res, next) {
 
     passport.authenticate('local', function(error, user, info) {
         if (error) { 
+
             req.flash('error', 'Se ha producido un error: ' + error);
             return next(error); 
         }
