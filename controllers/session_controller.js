@@ -1,5 +1,6 @@
 
-var userController = require('./user_controller');
+var models = require('../models');
+var Sequelize = require('sequelize');
 
 // Middleware: Se requiere hacer login.
 //
@@ -20,18 +21,25 @@ exports.loginRequired = function (req, res, next) {
     }
 };
 
-
 // Configurar Passport
 
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
+/*
+ * Autenticar un usuario: Comprueba si el usuario esta registrado en users
+ *
+ * DBusca el usuario con el username dado y comprueba su password.
+ * Si la autenticacion es correcta, llama a done(null, user).
+ * Si la autenticacion falla, llama a done(null,false).
+ * Si hay errores llama a done(error);
+ */
 passport.use(new LocalStrategy(
     function(username, password, done) {
 
-        userController.authenticate(username, password)
+        models.User.findOne({where: {username: username}})
             .then(function(user) {
-                if (user) {
+                if (user && user.verifyPassword(password)) {
                     return done(null, user); 
                 } else {
                     return done(null,false);        
@@ -42,6 +50,7 @@ passport.use(new LocalStrategy(
             });
     }
 ));
+ 
 
 
 // GET /session   -- Formulario de login
@@ -62,6 +71,7 @@ exports.create = function(req, res, next) {
 
     passport.authenticate('local', function(error, user, info) {
         if (error) { 
+
             req.flash('error', 'Se ha producido un error: ' + error);
             return next(error); 
         }
