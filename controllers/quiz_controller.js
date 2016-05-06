@@ -188,11 +188,20 @@ exports.update = function(req, res, next) {
             return; 
         }  
 
-        // Borrar la imagen antigua de Cloudinary (Ignoro resultado)
-        cloudinary.api.delete_resources(req.quiz.Attachment.public_id);
+        // Eliminar la imagen antigua
+        return new Promise(function(resolve,reject) {
 
-        // Eliminar la imagen antigua de la tabla Attachments
-        return quiz.Attachment.destroy()
+                if (req.quiz.Attachment) {
+
+                    // Borrar la imagen antigua de Cloudinary (Ignoro resultado)
+                    cloudinary.api.delete_resources(req.quiz.Attachment.public_id);
+
+                    // Eliminar la imagen antigua de la tabla Attachments
+                    resolve(quiz.Attachment.destroy())  
+                } else {
+                    resolve();
+                }
+            })
             .then(function() {
 
                 // Salvar la imagen nueva en Cloudinary
