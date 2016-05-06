@@ -1,9 +1,17 @@
 
+<h2>Pregunta</h2>
+
 <p>
-  <form method="get" action="/quizzes/<%= quiz.id %>/check">        
+  <form method="get" action="/quizzes/<%= quiz.id %>/check">
     <p>
-      Pregunta: <%= quiz.question %>
+      <%= quiz.question %>
     </p>
+
+    <% if (quiz.Attachment) { %>
+      <img src="<%= quiz.Attachment.url %>" />
+    <% } else { %> 
+      <img src="/imgs/question.png" width="50px" />
+    <% } %> 
 
     <p>
       <input type="text" name="answer" value="<%= answer %>" placeholder="Respuesta" />
@@ -12,13 +20,13 @@
   </form>
 </p>
 
+<h2>Comentarios</h2>
+
 <% if (session.user) { %>
   <p>
     <a href="/quizzes/<%= quiz.id %>/comments/new"><button>Nuevo comentario</button></a>
   </p>
 <% } %>
-
-<p><strong>Comentarios:</strong></p>
 
 <ul>
   <% for (var i in quiz.Comments) { 
