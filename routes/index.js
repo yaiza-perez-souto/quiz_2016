@@ -74,7 +74,7 @@ router.post('/quizzes/:quizId(\\d+)/comments',     sessionController.loginRequir
 	                                               commentController.create);
 router.put('/quizzes/:quizId(\\d+)/comments/:commentId(\\d+)/accept', 
 	                                               sessionController.loginRequired, 
-												   quizController.ownershipRequired, 
+	                                               sessionController.adminRequired, 
 	                                               commentController.accept);
 
 module.exports = router;
