@@ -100,43 +100,25 @@ exports.create = function(req, res, next) {
             return; 
         }    
 
-         // Salvar la imagen en Cloudinary
-        return new Promise(function(resolve,reject) {
-    
-            cloudinary.uploader.upload(req.file.path, function(result) {
-                    fs.unlink(req.file.path); // borrar la imagen subida a ./uploads
-
-                    if (! result.error) {
-                        resolve({ public_id: result.public_id,
-                                  url: result.secure_url,
-                                  filename: req.file.originalname,
-                                  mime: req.file.mimetype,
-                                  QuizId: quiz.id });
-                    } else {
-                        req.flash('error', 'No se ha podido salvar la imagen: '+result.error.message);
-                        resolve(null);
-                    }
-                },
-                cloudinary_image_options
-            );
-        })
-        .then(function(attachmentData) { // Guardar attachment y relacion en la BBDD.
-
-            if (attachmentData) {
-                return models.Attachment.create(attachmentData)
-                    .then(function(attachment) {
-                        req.flash('success', 'Imagen guardada con éxito.');
-                    })
-                    .catch(function(error) { // Ignoro errores de validacion en imagenes
-                        req.flash('error', 'No se ha podido salvar la imagen: '+error.message);
-                        cloudinary.api.delete_resources(attachmentData.public_id, function(result) {
-                            if (result.error) {
-                                req.flash('error', 'Borrando en Cloudinary: '+result.error.message);
-                            }
-                        });
-                    });
+        // Salvar la imagen en Cloudinary
+        return uploadResourceToCloudinary(req.file.path)
+        .then(function(uploadResult) {
+            // Crear y guardar el nuevo attachment en la BBDD.
+            if (uploadResult) {
+                return models.Attachment.create({ public_id: uploadResult.public_id,
+                                                  url: uploadResult.url,
+                                                  filename: req.file.originalname,
+                                                  mime: req.file.mimetype,
+                                                  QuizId: quiz.id })
+                .then(function(attachment) {
+                    req.flash('success', 'Imagen nueva guardada con éxito.');
+                })
+                .catch(function(error) { // Ignoro errores de validacion en imagenes
+                    req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
+                    cloudinary.api.delete_resources(uploadResult.public_id);
+                });
             }
-        })
+        });
     })
     .then(function() {
         res.redirect('/quizzes');
@@ -176,61 +158,47 @@ exports.update = function(req, res, next) {
 
         req.flash('success', 'Pregunta y Respuesta editadas con éxito.');
 
+        // Sin imagen: Eliminar attachment e imagen viejos.
         if (!req.file) { 
-            req.flash('info', 'No se ha cambiado la imagen ya existente.');
+            req.flash('info', 'Tenemos un Quiz sin imagen.');
+            if (quiz.Attachment) {
+                cloudinary.api.delete_resources(quiz.Attachment.public_id);
+                return quiz.Attachment.destroy();
+            }
             return; 
         }  
 
-        // Eliminar la imagen antigua
-        return new Promise(function(resolve,reject) {
+        // Recordar public_id de la imagen antigua.
+        var old_public_id = quiz.Attachment ? quiz.Attachment.public_id : null;
 
-                if (req.quiz.Attachment) {
-
-                    // Borrar la imagen antigua de Cloudinary (Ignoro resultado)
-                    cloudinary.api.delete_resources(req.quiz.Attachment.public_id);
-
-                    // Eliminar la imagen antigua de la tabla Attachments
-                    resolve(quiz.Attachment.destroy())  
-                } else {
-                    resolve();
-                }
-            })
-            .then(function() {
-
-                // Salvar la imagen nueva en Cloudinary
-                return new Promise(function(resolve,reject) {
-         
-                    cloudinary.uploader.upload(req.file.path, function(result) {
-                            fs.unlink(req.file.path); // borrar la imagen subida a ./uploads
-
-                            if (! result.error) {
-                                resolve({ public_id: result.public_id,
-                                          url: result.secure_url,
-                                          filename: req.file.originalname,
-                                          mime: req.file.mimetype,
-                                          QuizId: quiz.id });
-                            } else {
-                                req.flash('error', 'No se ha podido salvar la nueva imagen: '+result.error.message);
-                                resolve(null);
-                            }
-                        },
-                        cloudinary_image_options
-                    );
-                })
-                .then(function(attachmentData) { // Guardar attachment y relacion en la BBDD.
-
-                    if (attachmentData) {
-                        return models.Attachment.create(attachmentData)
-                            .then(function(attachment) {
-                                req.flash('success', 'Imagen nueva guardada con éxito.');
-                            })
-                            .catch(function(error) { // Ignoro errores de validacion en imagenes
-                                req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
-                                cloudinary.api.delete_resources(attachmentData.public_id);
-                            });
+        // Salvar la imagen nueva en Cloudinary
+        return uploadResourceToCloudinary(req.file.path)
+        .then(function(uploadResult) {
+            // Actualizar el attachment en la BBDD.
+            if (uploadResult) {
+                return quiz.getAttachment()
+                .then(function(attachment) {
+                    if (!attachment) {
+                        attachment = models.Attachment.build({ QuizId: quiz.id });
                     }
+                    attachment.public_id = uploadResult.public_id;
+                    attachment.url = uploadResult.url;
+                    attachment.filename = req.file.originalname;
+                    attachment.mime = req.file.mimetype;
+                    return attachment.save();
+                })
+                .then(function(attachment) {
+                    req.flash('success', 'Imagen nueva guardada con éxito.');
+                    if (old_public_id) {
+                        cloudinary.api.delete_resources(old_public_id);
+                    }
+                })
+                .catch(function(error) { // Ignoro errores de validacion en imagenes
+                    req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
+                    cloudinary.api.delete_resources(uploadResult.public_id);
                 });
-            });
+            }
+        });
     })            
     .then(function() {
         res.redirect('/quizzes');
@@ -255,7 +223,9 @@ exports.update = function(req, res, next) {
 exports.destroy = function(req, res, next) {
 
     // Borrar la imagen de Cloudinary (Ignoro resultado)
-    cloudinary.api.delete_resources(req.quiz.Attachment.public_id);
+    if (req.quiz.Attachment) {
+        cloudinary.api.delete_resources(req.quiz.Attachment.public_id);
+    }
 
     req.quiz.destroy()
       .then( function() {
@@ -268,7 +238,47 @@ exports.destroy = function(req, res, next) {
       });
 };
 
+// FUNCIONES AUXILIARES
+
+/**
+ * Eliminar el attachment del quiz dado: se elimina la imagen subida a
+ * Cloudinary y el objeto de la tabla Attachment.
+ *
+ * @param quiz El quiz al que pertenece el attachment a eliminar. Si el 
+ *             quiz no tiene attachment, no se hace nada.
+ * 
+ * @returns La promesa encargada de eliminar el attachment.
+ */
 
 
+
+
+/**
+ * Crea una promesa para subir una imagen nueva a Cloudinary. 
+ * Tambien borra la imagen original.
+ * 
+ * Si puede subir la imagen la promesa se satisface y devuelve el public_id y 
+ * la url del recurso subido. 
+ * Si no puede subir la imagen, la promesa tambien se cumple pero devuelve null.
+ *
+ * @return Devuelve una Promesa. 
+ */
+function uploadResourceToCloudinary(path) {
+    return new Promise(function(resolve,reject) {
+        cloudinary.uploader.upload(path, function(result) {
+                fs.unlink(path); // borrar la imagen subida a ./uploads
+                if (! result.error) {
+                    resolve({ public_id: result.public_id, url: result.secure_url });
+                } else {
+                    req.flash('error', 'No se ha podido salvar la nueva imagen: '+result.error.message);
+                    resolve(null);
+                }
+            },
+            cloudinary_image_options
+        );
+    })
+}
+
+        
 
 
