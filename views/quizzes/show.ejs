@@ -27,8 +27,7 @@
 
            <li> <%= comment.text %> </li>
 
-       <% } else if (session.user && 
-                     (session.user.isAdmin || (quiz.AuthorId === session.user.id))) { %>
+       <% } else if (session.user && session.user.isAdmin) { %>
 
            <li> <%= comment.text %> </li>
 

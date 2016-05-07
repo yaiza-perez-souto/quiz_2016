@@ -21,6 +21,18 @@ exports.loginRequired = function (req, res, next) {
     }
 };
 
+// MW que permite gestionar solamente si el usuario logeado es admin.
+exports.adminRequired = function(req, res, next){
+
+    var isAdmin      = req.session.user.isAdmin;
+
+    if (isAdmin) {
+        next();
+    } else {
+      console.log('Ruta prohibida: el usuario logeado no es administrador.');
+      res.send(403);    }
+};
+
 // MW que permite gestionar un usuario solamente si el usuario logeado es:
 //   - admin 
 //   - o es el usuario a gestionar.
