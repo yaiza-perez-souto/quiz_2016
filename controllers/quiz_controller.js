@@ -45,12 +45,31 @@ exports.index = function(req, res, next) {
 
     var options = { include: [ models.Attachment ] };
 
+    // Solo los Quizzes de un autor.
     if (req.user) {
       options.where = {AuthorId: req.user.id}
     }
 
+    // Para usuarios logeados: incluir los fans de las preguntas.
+    if (req.session.user) {
+        options.include.push({ model: models.User, as: 'Fans' });
+    }
+
 	models.Quiz.findAll(options)
 		.then(function(quizzes) {
+
+            // Para usuarios logeados:
+            //   Añado a todos los quizzes un atributo booleano llamado "favourite"
+            //   que indica si el quiz es uno de mis favoritos o no. 
+            if (req.session.user) {
+
+                quizzes.forEach(function(quiz) {
+                    quiz.favourite = quiz.Fans.some(function(fan) {
+                        return fan.id == req.session.user.id;
+                    });
+                });
+            } 
+
 			res.render('quizzes/index.ejs', { quizzes: quizzes});
 		})
 		.catch(function(error) {
@@ -64,8 +83,28 @@ exports.show = function(req, res, next) {
 
 	var answer = req.query.answer || '';
 
-	res.render('quizzes/show', {quiz: req.quiz,
-								answer: answer});
+    // Para usuarios logeados:
+    //   Si el quiz es uno de mis favoritos, creo un atributo llamado
+    //   "favourite" con el valor true.
+    if (req.session.user) {
+
+        req.quiz.getFans({where: {id: req.session.user.id}})
+            .then(function(fans) {
+                if (fans.length > 0) {
+                    req.quiz.favourite = true
+                }      
+            })
+            .then(function() {
+                res.render('quizzes/show', { quiz: req.quiz,
+                                             answer: answer});
+            })
+            .catch(function(error){
+                next(error);
+            });
+    } else {
+        res.render('quizzes/show', {quiz: req.quiz,
+                                    answer: answer});
+    }
 };
 
 
