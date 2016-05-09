@@ -1,6 +1,8 @@
 
 var models = require('../models');
 var Sequelize = require('sequelize');
+var url = require('url');
+
 
 // Middleware: Se requiere hacer login.
 //
@@ -50,7 +52,15 @@ var authenticate = function(login, password) {
 // query (si no existe uso /).
 //
 exports.new = function(req, res, next) {
-    res.render('session/new', { redir: req.query.redir || '/' });
+
+    var redir = req.query.redir || 
+                url.parse(req.headers.referer || "/").pathname;
+
+    if (redir === '/session') {
+        redir = "/";
+    }
+
+    res.render('session/new', { redir: redir });
 };
 
 
