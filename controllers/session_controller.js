@@ -30,7 +30,8 @@ exports.new = function(req, res, next) {
     var redir = req.query.redir || 
                 url.parse(req.headers.referer || "/").pathname;
 
-    if (redir === '/session') {
+    // No volver al formulario de login ni al de registro.
+    if (redir === '/session' || redir === '/users/new') {
         redir = "/";
     }
 
