@@ -1,7 +1,7 @@
 
 var models = require('../models');
 var Sequelize = require('sequelize');
-
+var url = require('url');
 
 /*
  * Autenticar un usuario: Comprueba si el usuario esta registrado en users
@@ -26,12 +26,22 @@ var authenticate = function(login, password) {
 
 // GET /session   -- Formulario de login
 exports.new = function(req, res, next) {
-    res.render('session/new');
+
+    var redir = req.query.redir || 
+                url.parse(req.headers.referer || "/").pathname;
+
+    if (redir === '/session') {
+        redir = "/";
+    }
+
+    res.render('session/new', { redir: redir });
 };
 
 
 // POST /session   -- Crear la sesion si usuario se autentica
 exports.create = function(req, res, next) {
+
+    var redir = req.body.redir || '/'
 
     var login     = req.body.login;
     var password  = req.body.password;
