@@ -2,24 +2,40 @@
 <!-- 
     Añadir la estrella adecuada al quiz pasado como parametro.
 
+    Solo se muestra la estrella si hay usuario logueado.
     Dependiendo del valor del atributo favourite, la estrella es gris o amarilla.
-
-    Guardo en redir el URL de la pagina actual para volver a esta misma pagina 
-    despues de pulsar sobre una estrella.
+    Se registra un onclick para enviar peticiones AJAX y repintar la estrella si OK.
 -->
 
 <% if (session.user) { %>
 
-    <% var method = quiz.favourite ? "delete" : "put";
-       var color  = quiz.favourite ? "yellow" : "grey";
-    %>
+    <a href=""> <img id="star<%= quiz.id %>" /> </a>
 
-    <form class="stars" method='post' 
-          action='/users/<%= session.user.id %>/favourites/<%= quiz.id %>?_method=<%= method %>'>
+    <script>
+        (function() {
+            var state =  <%= !!quiz.favourite %>;
+            var userId = <%= session.user.id %>;
+            var quizId = <%= quiz.id %>;
 
-          <input type='hidden' name='redir' value="<%= url || '' %>" >
-
-          <input type="image" src="/imgs/star_<%= color %>.png" />
-    </form>
+            var img = document.getElementById("star<%= quiz.id %>");
+            img.src = state ? "/imgs/star_yellow.png" : "/imgs/star_grey.png";
+            img.onclick = function() {
+                var request = new XMLHttpRequest();
+                var method = state ? "DELETE" : "PUT";
+                var url = "/users/" + userId + "/favourites/" + quizId + "?_method=" + method;
+                request.open("POST", url);
+                request.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
+                request.onreadystatechange = function() {
+                    if (request.readyState === 4 && request.status === 200) {
+                        img.src = state ? "/imgs/star_grey.png" : "/imgs/star_yellow.png";
+                        state = !state;
+                    }
+                };
+                request.send("hola");
+                return false;
+            };
+        })();
+    </script>
 
 <% } %>
+
