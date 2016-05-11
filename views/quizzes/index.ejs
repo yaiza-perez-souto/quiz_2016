@@ -1,4 +1,8 @@
 
+<%  if (locals.paginate_control) { %>
+  <%- paginate_control %>
+<% } %>
+
 <table>
   <% for (var i in quizzes) { %> 
      <tr>

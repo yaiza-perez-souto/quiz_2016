@@ -1,23 +1,51 @@
 
 var models = require('../models');
+var paginate = require('./paginate').paginate;
 
 // GET /users/25/favourites
 exports.index = function(req, res, next) {
 
-    req.user.getFavourites({include: [ models.Attachment ]})
-        .then(function(favourites) {
+    req.user.countFavourites()
+    .then(function(count) {
 
-            favourites.forEach(function(favourite) {
-                favourite.favourite = true;
-            });
+        // Paginacion:
 
-            res.render('favourites/index', {
-                quizzes: favourites
-            });
-        })
-        .catch(function(error) {
-            next(error);
+        var items_per_page = 6;
+
+        // La pagina a mostrar viene en la query
+        var pageno = parseInt(req.query.pageno) || 1;
+
+        // Datos para obtener el rango de datos a buscar en la BBDD.
+        var pagination = {
+            offset: items_per_page * (pageno - 1),
+            limit: items_per_page
+        };
+
+        // Crear un string con el HTML que pinta la botonera de paginacion.
+        // Lo añado como una variable local de res para que lo pinte el layout de la aplicacion.
+        res.locals.paginate_control = paginate(count, items_per_page, pageno, req.url);
+
+        return pagination;
+    })
+    .then(function(pagination) {
+
+        return req.user.getFavourites({offset: pagination.offset,
+                                       limit: pagination.limit,
+                                        include: [ models.Attachment ]});
+    })
+    .then(function(favourites) {
+
+        favourites.forEach(function(favourite) {
+            favourite.favourite = true;
         });
+
+        res.render('favourites/index', {
+            quizzes: favourites
+        });
+    })
+    .catch(function(error) {
+        next(error);
+    });
 };
 
 

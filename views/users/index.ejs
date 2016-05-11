@@ -32,3 +32,7 @@
 <% if (session.user) { %>
   <a href="/users/new"><button type="button">Crear usuario</button></a>
 <% }; %>
+
+<%  if (locals.paginate_control) { %>
+  <%- paginate_control %>
+<% } %>

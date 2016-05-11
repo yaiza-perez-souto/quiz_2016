@@ -3,6 +3,7 @@ var models = require('../models');
 var Sequelize = require('sequelize');
 var cloudinary = require('cloudinary');
 var fs = require('fs');
+var paginate = require('./paginate').paginate;
 
 // Opciones para imagenes subidas a Cloudinary
 var cloudinary_image_options = { crop: 'limit', width: 200, height: 200, radius: 5, 
@@ -43,38 +44,68 @@ exports.ownershipRequired = function(req, res, next){
 // GET /quizzes
 exports.index = function(req, res, next) {
 
-    var options = { include: [ models.Attachment ] };
+    var options = {};
 
     // Solo los Quizzes de un autor.
     if (req.user) {
       options.where = {AuthorId: req.user.id}
     }
 
-    // Para usuarios logeados: incluir los fans de las preguntas.
-    if (req.session.user) {
-        options.include.push({ model: models.User, as: 'Fans' });
-    }
+    models.Quiz.count(options)
+    .then(function(count) {
 
-	models.Quiz.findAll(options)
-		.then(function(quizzes) {
+        options.include = [ models.Attachment ];
 
-            // Para usuarios logeados:
-            //   Añado a todos los quizzes un atributo booleano llamado "favourite"
-            //   que indica si el quiz es uno de mis favoritos o no. 
-            if (req.session.user) {
+        // Para usuarios logeados: incluir los fans de las preguntas.
+        if (req.session.user) {
+            options.include.push({ model: models.User, as: 'Fans' });
+        }
 
-                quizzes.forEach(function(quiz) {
-                    quiz.favourite = quiz.Fans.some(function(fan) {
-                        return fan.id == req.session.user.id;
-                    });
+        // Paginacion:
+
+        var items_per_page = 6;
+
+        // La pagina a mostrar viene en la query
+        var pageno = parseInt(req.query.pageno) || 1;
+
+        // Datos para obtener el rango de datos a buscar en la BBDD.
+        var pagination = {
+            offset: items_per_page * (pageno - 1),
+            limit: items_per_page
+        };
+
+        // Crear un string con el HTML que pinta la botonera de paginacion.
+        // Lo añado como una variable local de res para que lo pinte el layout de la aplicacion.
+        res.locals.paginate_control = paginate(count, items_per_page, pageno, req.url);
+
+        return pagination;
+    })
+    .then(function(pagination) {
+
+        options.offset = pagination.offset;
+        options.limit  = pagination.limit;
+
+        return models.Quiz.findAll(options);
+    })
+	.then(function(quizzes) {
+
+        // Para usuarios logeados:
+        //   Añado a todos los quizzes un atributo booleano llamado "favourite"
+        //   que indica si el quiz es uno de mis favoritos o no. 
+        if (req.session.user) {
+
+            quizzes.forEach(function(quiz) {
+                quiz.favourite = quiz.Fans.some(function(fan) {
+                    return fan.id == req.session.user.id;
                 });
-            } 
+            });
+        } 
 
-			res.render('quizzes/index.ejs', { quizzes: quizzes});
-		})
-		.catch(function(error) {
-			next(error);
-		});
+		res.render('quizzes/index.ejs', { quizzes: quizzes});
+	})
+	.catch(function(error) {
+		next(error);
+	});
 };
 
 
