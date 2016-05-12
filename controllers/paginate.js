@@ -24,7 +24,7 @@ exports.paginate = function(totalItems, itemsPerPage, currentPage, url, param_na
 
   var pagctrl = [];
 
-  pagctrl.push('<div class="pagination"> <ul>');
+  pagctrl.push('<ul class="pagination">');
 
   // Primero
   if (1 == currentPage) {
@@ -78,7 +78,7 @@ exports.paginate = function(totalItems, itemsPerPage, currentPage, url, param_na
     pagctrl.push('<li> <a href="' + url + '"> ' + "Último" + '  </a></li>');
   }
 
-  pagctrl.push('</ul> </div>');
+  pagctrl.push('</ul>');
 
   return pagctrl.join('');
 };
