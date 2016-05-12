@@ -122,21 +122,8 @@ exports.create = function(req, res, next) {
         // Salvar la imagen en Cloudinary
         return uploadResourceToCloudinary(req.file.path)
         .then(function(uploadResult) {
-            // Crear y guardar el nuevo attachment en la BBDD.
-            if (uploadResult) {
-                return models.Attachment.create({ public_id: uploadResult.public_id,
-                                                  url: uploadResult.url,
-                                                  filename: req.file.originalname,
-                                                  mime: req.file.mimetype,
-                                                  QuizId: quiz.id })
-                .then(function(attachment) {
-                    req.flash('success', 'Imagen nueva guardada con éxito.');
-                })
-                .catch(function(error) { // Ignoro errores de validacion en imagenes
-                    req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
-                    cloudinary.api.delete_resources(uploadResult.public_id);
-                });
-            }
+            // Crear nuevo attachment en la BBDD.
+            return createAttachment(req, uploadResult, quiz);
         });
     })
     .then(function() {
@@ -196,36 +183,11 @@ exports.update = function(req, res, next) {
             return; 
         }  
 
-        // Recordar public_id de la imagen antigua.
-        var old_public_id = quiz.Attachment ? quiz.Attachment.public_id : null;
-
         // Salvar la imagen nueva en Cloudinary
         return uploadResourceToCloudinary(req.file.path)
         .then(function(uploadResult) {
             // Actualizar el attachment en la BBDD.
-            if (uploadResult) {
-                return quiz.getAttachment()
-                .then(function(attachment) {
-                    if (!attachment) {
-                        attachment = models.Attachment.build({ QuizId: quiz.id });
-                    }
-                    attachment.public_id = uploadResult.public_id;
-                    attachment.url = uploadResult.url;
-                    attachment.filename = req.file.originalname;
-                    attachment.mime = req.file.mimetype;
-                    return attachment.save();
-                })
-                .then(function(attachment) {
-                    req.flash('success', 'Imagen nueva guardada con éxito.');
-                    if (old_public_id) {
-                        cloudinary.api.delete_resources(old_public_id);
-                    }
-                })
-                .catch(function(error) { // Ignoro errores de validacion en imagenes
-                    req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
-                    cloudinary.api.delete_resources(uploadResult.public_id);
-                });
-            }
+            return updateAttachment(req, uploadResult, quiz);
         });
     })            
     .then(function() {
@@ -274,16 +236,61 @@ exports.destroy = function(req, res, next) {
 // FUNCIONES AUXILIARES
 
 /**
- * Eliminar el attachment del quiz dado: se elimina la imagen subida a
- * Cloudinary y el objeto de la tabla Attachment.
- *
- * @param quiz El quiz al que pertenece el attachment a eliminar. Si el 
- *             quiz no tiene attachment, no se hace nada.
- * 
- * @returns La promesa encargada de eliminar el attachment.
+ * Crea una promesa para crear un attachment en la tabla Attachments.
  */
+function createAttachment(req, uploadResult, quiz) {
+    if (!uploadResult) {
+        return Promise.resolve();
+    }
+
+    return models.Attachment.create({ public_id: uploadResult.public_id,
+                                      url: uploadResult.url,
+                                      filename: req.file.originalname,
+                                      mime: req.file.mimetype,
+                                      QuizId: quiz.id })
+    .then(function(attachment) {
+        req.flash('success', 'Imagen nueva guardada con éxito.');
+    })
+    .catch(function(error) { // Ignoro errores de validacion en imagenes
+        req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
+        cloudinary.api.delete_resources(uploadResult.public_id);
+    });
+}
 
 
+/**
+ * Crea una promesa para actualizar un attachment en la tabla Attachments.
+ */
+function updateAttachment(req, uploadResult, quiz) {
+    if (!uploadResult) {
+        return Promise.resolve();
+    }
+
+    // Recordar public_id de la imagen antigua.
+    var old_public_id = quiz.Attachment ? quiz.Attachment.public_id : null;
+
+    return quiz.getAttachment()
+    .then(function(attachment) {
+        if (!attachment) {
+            attachment = models.Attachment.build({ QuizId: quiz.id });
+        }
+        attachment.public_id = uploadResult.public_id;
+        attachment.url = uploadResult.url;
+        attachment.filename = req.file.originalname;
+        attachment.mime = req.file.mimetype;
+        return attachment.save();
+    })
+    .then(function(attachment) {
+        req.flash('success', 'Imagen nueva guardada con éxito.');
+        if (old_public_id) {
+            cloudinary.api.delete_resources(old_public_id);
+        }
+    })
+    .catch(function(error) { // Ignoro errores de validacion en imagenes
+        req.flash('error', 'No se ha podido salvar la nueva imagen: '+error.message);
+        cloudinary.api.delete_resources(uploadResult.public_id);
+    });
+}
 
 
 /**
