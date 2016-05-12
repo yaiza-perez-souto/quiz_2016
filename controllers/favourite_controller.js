@@ -39,9 +39,8 @@ exports.index = function(req, res, next) {
             favourite.favourite = true;
         });
 
-        res.render('favourites/index', {
-            quizzes: favourites
-        });
+        res.render('quizzes/index', {quizzes: favourites,
+                                     title: "Mis Preguntas Favoritas"});
     })
     .catch(function(error) {
         next(error);
