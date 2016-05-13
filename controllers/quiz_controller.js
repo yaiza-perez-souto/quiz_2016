@@ -191,7 +191,7 @@ exports.create = function(req, res, next) {
         }    
 
         // Salvar la imagen en Cloudinary
-        return uploadResourceToCloudinary(req.file.path)
+        return uploadResourceToCloudinary(req)
         .then(function(uploadResult) {
             // Crear nuevo attachment en la BBDD.
             return createAttachment(req, uploadResult, quiz);
@@ -255,7 +255,7 @@ exports.update = function(req, res, next) {
         }  
 
         // Salvar la imagen nueva en Cloudinary
-        return uploadResourceToCloudinary(req.file.path)
+        return uploadResourceToCloudinary(req)
         .then(function(uploadResult) {
             // Actualizar el attachment en la BBDD.
             return updateAttachment(req, uploadResult, quiz);
@@ -374,8 +374,9 @@ function updateAttachment(req, uploadResult, quiz) {
  *
  * @return Devuelve una Promesa. 
  */
-function uploadResourceToCloudinary(path) {
+function uploadResourceToCloudinary(req) {
     return new Promise(function(resolve,reject) {
+        var path = req.file.path;
         cloudinary.uploader.upload(path, function(result) {
                 fs.unlink(path); // borrar la imagen subida a ./uploads
                 if (! result.error) {
