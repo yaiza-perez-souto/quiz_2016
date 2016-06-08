@@ -16,19 +16,6 @@ exports.load = function(req, res, next, quizId) {
         .catch(function(error) { next(error); });
 };
 
-//SEARCH /quizzes?search=texto_a_buscar
-exports.search = function(req, res, next){
-  var texto_a_buscar= req.query.search || "";
-  models.Quiz.findAll({
-    where: {
-      question:{
-        $like: "%" + texto_a_buscar + "%"
-      }
-    }
-  }).then(function(quizzes){
-     res.render('quizzes/index.ejs', {quizzes:quizzes});
-  }).catch(function(error){next(error);});
- };
 
 // MW que permite acciones solamente si al usuario logeado es admin o es el autor del quiz.
 exports.ownershipRequired = function(req, res, next){

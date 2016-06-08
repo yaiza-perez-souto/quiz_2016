@@ -13,6 +13,8 @@ var sessionController = require('../controllers/session_controller');
  		foto1: '<img src="foto1.jpg">',
  	})
  });
+
+ router.get('/quizzes/search' , quizController.search); 
   
 
 /* GET home page. */
