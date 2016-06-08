@@ -7,14 +7,6 @@ var userController = require('../controllers/user_controller');
 var sessionController = require('../controllers/session_controller');
 
 
-//GET/author
- router.get('/author', function(req, res, next){
- 	res.render('author', { link:'<a href="https://github.com/yaiza-perez-souto/quiz_2016">Proyecto en github</a>',
- 		foto1: '<img src="foto1.jpg">',
- 	})
- });
-  
-
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index');
